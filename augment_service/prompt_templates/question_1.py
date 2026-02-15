@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # --- Создание DataFrame и сохранение в Excel ---
     df = pd.DataFrame(excel_data)
     # Укажите имя файла. Можно добавить путь, если нужно сохранить в другую папку.
-    excel_filename = f"generation_results_{generation_time.strftime('%Y%m%d_%H%M%S')}.xlsx"
+    excel_filename = f"results_question_1.xlsx"
     
     df.to_excel(excel_filename, index=False, engine='openpyxl') # index=False чтобы не сохранять индекс pandas
     print(f"\n--- Результаты сохранены в файл: {excel_filename} ---")

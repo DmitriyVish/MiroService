@@ -3,7 +3,10 @@ ANSWER_PROMPT_TEMPLATE = """
 Вопрос: "{QUESTION_TEXT}"
 
 Представь, что ты {AGENT_ROLE_DESCRIPTION}.
-Проходишь тестирование на должность DATA ENGINEER в крупную IT-компанию. Ответь на вопрос кратко, в 1-2 предложения, в формате, соответствующем твоей роли.
+Тебя пригласили на интервью на должность DATA ENGINEER в крупную IT-компанию.
+Вопрос, который ты сейчас видишь, - это нестандартная логическая задачка, призванная проверить твоё креативное мышление, способность анализировать необычные ситуации и аргументировать свою точку зрения.
+Подумай нестандартно, рассмотри вопрос с разных сторон и ответь, опираясь на логику и здравый смысл. Обоснуй свой ответ. Ответь кратко (1 - 2 предложения)
+
 Ответ:
 """
 
@@ -39,7 +42,9 @@ def generate_prompt(queston_text: str, agent_type: str) -> str:
 
 if __name__ == "__main__":
     import sys
-    import os    
+    import os   
+    import pandas as pd
+    from datetime import datetime 
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))    
     sys.path.insert(0, parent_dir)
     
@@ -49,7 +54,8 @@ if __name__ == "__main__":
     # Фиксированный вопрос
     QUESTION = "В некоторой комнате на пол уронили карандаш. Объясните почему вы не можете через него перепрыгнуть?"
     
-    responses = {}
+    excel_data = []
+    generation_time = datetime.now() # Запоминаем время генерации
     
     # Генерация промпта
     for agent in AGENT_ROLES:
@@ -62,13 +68,32 @@ if __name__ == "__main__":
         response = generator.generate_tasks(
             agent_prompt,
             num_return_sequences=1,
-            max_length=200,
+            max_length=2000,
             temperature=0.9
         )[0]
 
-        responses[agent] = response.strip()
+        # responses[agent] = response.strip()        
+    
+        # --- Сохраняем данные для Excel ---
+        excel_data.append({
+            "Дата и время генерации": generation_time,
+            "Промпт": agent_prompt,
+            "Ответ": response.strip(), # Убираем лишние пробелы
+            "Роль агента": agent
+        })
         
-    print("--- Сводка ответов ---")
-    for agent_key, answer in responses.items():
-        print(f"[{agent_key}]: {answer}")
-    print("------------------------")    
+        # --- Создание DataFrame и сохранение в Excel ---
+        df = pd.DataFrame(excel_data)
+        # Укажите имя файла. Можно добавить путь, если нужно сохранить в другую папку.
+        excel_filename = f"results_question_4.xlsx"
+
+        df.to_excel(excel_filename, index=False, engine='openpyxl') # index=False чтобы не сохранять индекс pandas
+        print(f"\n--- Результаты сохранены в файл: {excel_filename} ---")
+
+        # --- Вывод сводки (опционально) ---
+        print("\n--- Сводка ответов ---")
+        for item in excel_data: # Используем данные из списка, чтобы не держать в памяти отдельный словарь responses
+            agent_key = item["Роль агента"]
+            answer = item["Ответ"]
+            print(f"[{agent_key}]: {answer}")
+        print("------------------------")
