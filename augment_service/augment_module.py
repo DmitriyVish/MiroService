@@ -1,4 +1,5 @@
 import torch
+torch.cuda.is_available = lambda: False
 import logging
 import numpy as np
 
