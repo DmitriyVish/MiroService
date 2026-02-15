@@ -1,0 +1,64 @@
+
+# Виртуальное окружение Python
+venv/
+env/
+ENV/
+neo_venv/ # Укажите имя вашей папки виртуального окружения, если оно отличается
+.venv/
+
+# Кэш Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Кэш пакетов и установок
+.Pipfile.lock
+.env
+.venv/
+.ENV/
+.envrc
+
+# Файлы логов
+*.log
+logs/
+
+# Файлы операционной системы
+.DS_Store # macOS
+Thumbs.db # Windows
+desktop.ini # Windows
+
+# Файлы от редакторов кода
+.vscode/
+.idea/ # PyCharm, IntelliJ IDEA
+*.swp
+*.swo
+*~
+
+# Файлы от Hugging Face Hub
+~/.cache/huggingface/
+
+# Сгенерированные файлы данных (включая Excel)
+*.xlsx
+*.csv
+*.json # Только если вы генерируете JSON-файлы с данными, а не используете их как конфиги
+datasets/
+
+# Файлы конфигурации, содержащие чувствительные данные (если есть)
+config_local.py
+# .env # Если вы храните .env файлы с секретами
+
+# Файлы от Docker (если будете использовать)
+docker-compose*.yaml
+docker-compose*.yml
+*.dockerignore
+
+# Тестовые файлы (если есть)
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Файлы от Jupyter Notebook (если используете)
+.ipynb_checkpoints/
