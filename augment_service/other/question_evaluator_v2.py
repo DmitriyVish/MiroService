@@ -4,7 +4,7 @@ import logging
 import json
 import pandas as pd
 from datetime import datetime
-from augment_module import TaskGenerator
+from augment_service.other.augment_module import TaskGenerator
 
 
 

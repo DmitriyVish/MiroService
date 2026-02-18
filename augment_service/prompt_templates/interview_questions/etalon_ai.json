@@ -1,0 +1,57 @@
+{
+  "Вопрос 1": {
+    "оценка": "схема требует доработок",
+    "проблемы": [
+      "возраст (age) хранится как число — со временем устаревает, лучше хранить birth_date (дата рождения) и вычислять возраст динамически",
+      "отсутствие ограничений NOT NULL для обязательных полей",
+      "отсутствие UNIQUE для login (логин должен быть уникальным)",
+      "нет первичного ключа (PK) для client_id",
+      "нет внешнего ключа для city_id (связь с таблицей cities)",
+      "избыточная длина VARCHAR для имён (255 вместо, например, 50)",
+      "не хватает контактной информации (email, телефон)",
+      "отсутствует метаинформация (статус аккаунта, дата последнего входа и т. д.)"
+    ],
+    "предложения": [
+      "заменить age на birth_date DATE NOT NULL",
+      "добавить PRIMARY KEY для client_id",
+      "добавить FOREIGN KEY для city_id → cities(city_id)",
+      "добавить UNIQUE и NOT NULL для login",
+      "сократить VARCHAR(255) до VARCHAR(50) для client_name и client_surname",
+      "добавить поля: email VARCHAR, phone VARCHAR, status VARCHAR, last_login DATE",
+      "создать отдельную таблицу client_metadata с дополнительной информацией"
+    ]
+  },
+  "Вопрос 2": {
+    "узкие места": [
+      "Spark Streaming обрабатывает данные батчами — задержка на уровне 1–15 мин",
+      "запись в Parquet → HDFS добавляет задержку (I/O, коммит файлов)",
+      "периодическая загрузка в ClickHouse — дополнительный лаг"
+    ],
+    "оптимизации": [
+      "использовать Flink вместо Spark Streaming (обработка событий по одному, низкая задержка)",
+      "настроить прямую запись в ClickHouse из Kafka (через Kafka Connect или Flink)",
+      "применить материализованные представления в ClickHouse для агрегаций в реальном времени",
+      "рассмотреть использование ksqlDB для потоковой обработки прямо в Kafka"
+    ],
+    "новый поток данных": [
+      "Kafka → Flink (или ksqlDB) → ClickHouse (напрямую)",
+      "опционально: Kafka → Flink → Parquet (для архива) + ClickHouse (для аналитики в реальном времени)"
+    ]
+  },
+  "Вопрос 3": {
+    "ошибки": [
+      "опечатка в названии таблиц: EMPLOYEE → EMPLOYEES, DEPARTMENTS → DEPARTMENTS",
+      "опечатка в названиях столбцов: DEPARTMENT_ID → DEPARTMENT_ID (должно быть DEPARTMENT_ID или DEPARTMENT_NAME, но корректнее — DEPARTMENT_ID)",
+      "MANAGER_ID = NULL → должно быть MANAGER_ID IS NULL",
+      "LOCATION_ID = (подзапрос) → лучше использовать IN (подзапрос может вернуть несколько строк)",
+      "WHERE CITY = 'SEOUL' → регистр может не совпадать, лучше UPPER(CITY) = 'SEOUL'",
+      "SUM(SALARY) >= 100000 в WHERE → должно быть в HAVING",
+      "GROUP BY DEPARTMENT_NAME → должен включать все неагрегированные столбцы из SELECT (DEPARTMENT_ID, DEPARTMENT_NAME)",
+      "неявное соединение таблиц через WHERE → лучше использовать явный JOIN"
+    ],
+    "исправленный запрос": "SELECT\n    d.department_id,\n    d.department_name,\n    SUM(e.salary) AS total_salary\nFROM employees e\nJOIN departments d ON e.department_id = d.department_id\nWHERE d.location_id IN (\n        SELECT location_id\n        FROM locations\n        WHERE UPPER(city) = 'SEOUL'\n    )\n    AND e.manager_id IS NULL\nGROUP BY d.department_id, d.department_name\nHAVING SUM(e.salary) > 100000;"
+  },
+  "Вопрос 4": {
+    "ответ": "Карандаш лежит вплотную к стене, поэтому с одной стороны от него — стена, с другой — пол. Перепрыгнуть «через» предмет подразумевает, что вы окажетесь с противоположной стороны от начальной точки. В данном случае это невозможно: вы либо упрётесь в стену, либо останетесь на той же стороне от карандаша."
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "input": {
+    "candidate_file": "prompt_templates/eval_result_parser/candidat_1.json",
+    "etalon_hr_file": "prompt_templates/interview_questions/etalon_hr.json",
+    "etalon_ai_file": "prompt_templates/interview_questions/etalon_ai.json"
+  },
+  "calibration": {
+    "cosine_lo": 0.72,
+    "cosine_hi": 0.92,
+    "final_policy": "max_of_two_etalon_scores_then_quality_adjustments"
+  },
+  "warnings": [],
+  "results": [
+    {
+      "Номер вопроса": "1",
+      "Ответ кандидата": "client_id INT PRIMARY KEY; - должен быть PK для уникальной идентификации, INT для экономии памяти и производительности.\n\nclient_name VARCHAR(50) NOT NULL; - ( В России самое длинное имя из 15 букв, поэтому можно ограничиться и 2 Newton, например :) )\n\nclient_surname VARCHAR(50) NOT NULL;\n\nlogin VARCHAR(30) UNIQUE NOT NULL; - логин должен быть уникальным\n\ncity_id INT NOT NULL; - для экономии памяти и производительности. Так же ничего не сказано про отдельную таблицу «cities» - она должна быть + добавить внешний ключ:\nALTER TABLE clients\nADD CONSTRAINT fk_clients_city\nFOREIGN KEY (city_id)\nREFERENCES cities(city_id);\n\nage - я бы заменил на birth_date DATE NOT NULL, так как возраст ежегодно устаревает, а по дате его можно вычислить.\n\nreg_date DEFAULT CURRENT_DATE NOT NULL; - автоматически будет установлена дата регистрации.",
+      "Cosine HR": 0.6569,
+      "Оценка HR (base)": 1.0,
+      "Cosine AI": 0.7484,
+      "Оценка AI (base)": 2.3,
+      "Эталон выбран": "ai",
+      "Оценка (base)": 2.3,
+      "Оценка (final)": 3.3,
+      "Комментарий": "Низкое соответствие: ответ содержит существенные ошибки, пропуски или нелогичные рассуждения."
+    },
+    {
+      "Номер вопроса": "2",
+      "Ответ кандидата": "item_id INT PRIMARY KEY,\nitem_name VARCHAR(50) NOT NULL,\nitem_cost NUMERIC(7,2) NOT NULL,\n\nСамый простой вариант - добавить поле last_cost_change в таблицу items и создать еще одну таблицу, в которой будем хранить историчность изменений цен.\n\nALTER TABLE items\nADD COLUMN last_cost_change DATE DEFAULT CURRENT_DATE;\n\nCREATE TABLE cost_history (\n   item_id INT,\n   item_cost NUMERIC(10,2),\n   date_change_cost DATE DEFAULT CURRENT_DATE\n);\n\nПри изменении цены :\n\nINSERT INTO cost_history (item_id, price)\nVALUES (1, 3990.00);\n\nТак же можно добавить триггер, чтобы значение в таблице историчности менялось автоматически.",
+      "Cosine HR": 0.5239,
+      "Оценка HR (base)": 1.0,
+      "Cosine AI": 0.2319,
+      "Оценка AI (base)": 1.0,
+      "Эталон выбран": "hr",
+      "Оценка (base)": 1.0,
+      "Оценка (final)": 1.8,
+      "Комментарий": "Низкое соответствие: ответ содержит существенные ошибки, пропуски или нелогичные рассуждения."
+    },
+    {
+      "Номер вопроса": "3",
+      "Ответ кандидата": "SELECT\n     d.department_id,\n     d.department_name,\n     SUM(e.salary) AS total_salary\nFROM employees e\nJOIN departments d\nON e.department_id = d.department_id\nWHERE d.location_id IN (\n     SELECT location_id\n     FROM locations\n     WHERE city = ‘SEOUL’\n     )\nAND e.manager_id IS NULL\nGROUP BY d.department_id, d.department_name\nHAVING SUM(e.salary) > 100000;",
+      "Cosine HR": 0.2618,
+      "Оценка HR (base)": 1.0,
+      "Cosine AI": 0.5381,
+      "Оценка AI (base)": 1.0,
+      "Эталон выбран": "hr",
+      "Оценка (base)": 1.0,
+      "Оценка (final)": 1.0,
+      "Комментарий": "Низкое соответствие: ответ содержит существенные ошибки, пропуски или нелогичные рассуждения."
+    },
+    {
+      "Номер вопроса": "4",
+      "Ответ кандидата": "Так как перепрыгнуть «через» предполагает, что мы должны находиться в разных плоскостях, а мы находимся в одной.",
+      "Cosine HR": 0.5164,
+      "Оценка HR (base)": 1.0,
+      "Cosine AI": 0.4327,
+      "Оценка AI (base)": 1.0,
+      "Эталон выбран": "hr",
+      "Оценка (base)": 1.0,
+      "Оценка (final)": 1.0,
+      "Комментарий": "Низкое соответствие: ответ содержит существенные ошибки, пропуски или нелогичные рассуждения."
+    }
+  ]
+}

@@ -3,10 +3,7 @@ ANSWER_PROMPT_TEMPLATE = """
 Вопрос: "{QUESTION_TEXT}"
 
 Представь, что ты {AGENT_ROLE_DESCRIPTION}.
-Тебя пригласили на интервью на должность DATA ENGINEER в крупную IT-компанию.
-Вопрос, который ты сейчас видишь, - это нестандартная логическая задачка, призванная проверить твоё креативное мышление, способность анализировать необычные ситуации и аргументировать свою точку зрения.
-Подумай нестандартно, рассмотри вопрос с разных сторон и ответь, опираясь на логику и здравый смысл. Обоснуй свой ответ. Ответь кратко (1 - 2 предложения)
-
+Проходишь тестирование на должность DATA ENGINEER в крупную IT-компанию. Ответь на вопрос в соответствующей твоей роли форме.
 Ответ:
 """
 
@@ -42,38 +39,55 @@ def generate_prompt(queston_text: str, agent_type: str) -> str:
 
 if __name__ == "__main__":
     import sys
-    import os   
+    import os  
     import pandas as pd
-    from datetime import datetime 
+    from datetime import datetime
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))    
     sys.path.insert(0, parent_dir)
     
-    from augment_module import TaskGenerator
+    from augment_service.other.augment_module import TaskGenerator
     generator = TaskGenerator("qwen3-4b-instruct-2507")
     
     # Фиксированный вопрос
-    QUESTION = "В некоторой комнате на пол уронили карандаш. Объясните почему вы не можете через него перепрыгнуть?"
+    QUESTION = """Представьте, что вы устроились работать Дата-инженером в некоторый интернет магазин. 
+    До вас в этой компании уже работал один разработчик, который придумал небольшую 
+    базу данных для этого магазина и потом неожиданно уволился. Ваша задача провести 
+    проверку существующей архитектуры и решить корректна ли она или можно внести 
+    некоторые доработки. 
+
+    Вы обратили внимание на таблицу с информацией о зарегистрировавшихся 
+    покупателях (клиентах). 
+
+    Таблица имеет следующую схему: 
+    clients (  
+    	client_id number, --уникальный id клиента 
+    	client_name varchar(255), --имя клиента   
+    	client_surname varchar(255), --фамилия клиента  
+    	login varchar(30), --логин, который придумал клиент 
+    	city_id number, --id города, который указал клиент (в интерфейсе выбирается название города, а в таблицу сохраняется id)	
+    	age -- number, --возраст клиента 
+    	reg_date -- date –дата регистрации на сайте 
+    ); 
+
+    Считаете ли вы данный набор и смысл полей корректным? Если нет, то напишите что по вашему мнению некорректно и какие изменения внесли бы."""
     
     excel_data = []
     generation_time = datetime.now() # Запоминаем время генерации
-    
-    # Генерация промпта
+
     for agent in AGENT_ROLES:
         agent_prompt = generate_prompt(QUESTION, agent)
         
         print(f"---ПРОМПТ ДЛЯ {agent}---")
         print(agent_prompt)
         
-        # Генерация ответа
+        # --- Генерация ответа ---
         response = generator.generate_tasks(
             agent_prompt,
             num_return_sequences=1,
-            max_length=2000,
-            temperature=0.9
+            max_length=1000, # Уменьшено для примера, может быть больше
+            temperature=0.7
         )[0]
 
-        # responses[agent] = response.strip()        
-    
         # --- Сохраняем данные для Excel ---
         excel_data.append({
             "Дата и время генерации": generation_time,
@@ -82,18 +96,18 @@ if __name__ == "__main__":
             "Роль агента": agent
         })
         
-        # --- Создание DataFrame и сохранение в Excel ---
-        df = pd.DataFrame(excel_data)
-        # Укажите имя файла. Можно добавить путь, если нужно сохранить в другую папку.
-        excel_filename = f"results_question_4.xlsx"
+    # --- Создание DataFrame и сохранение в Excel ---
+    df = pd.DataFrame(excel_data)
+    # Укажите имя файла. Можно добавить путь, если нужно сохранить в другую папку.
+    excel_filename = f"results_question_1.xlsx"
+    
+    df.to_excel(excel_filename, index=False, engine='openpyxl') # index=False чтобы не сохранять индекс pandas
+    print(f"\n--- Результаты сохранены в файл: {excel_filename} ---")
 
-        df.to_excel(excel_filename, index=False, engine='openpyxl') # index=False чтобы не сохранять индекс pandas
-        print(f"\n--- Результаты сохранены в файл: {excel_filename} ---")
-
-        # --- Вывод сводки (опционально) ---
-        print("\n--- Сводка ответов ---")
-        for item in excel_data: # Используем данные из списка, чтобы не держать в памяти отдельный словарь responses
-            agent_key = item["Роль агента"]
-            answer = item["Ответ"]
-            print(f"[{agent_key}]: {answer}")
-        print("------------------------")
+    # --- Вывод сводки (опционально) ---
+    print("\n--- Сводка ответов ---")
+    for item in excel_data: # Используем данные из списка, чтобы не держать в памяти отдельный словарь responses
+        agent_key = item["Роль агента"]
+        answer = item["Ответ"]
+        print(f"[{agent_key}]: {answer}")
+    print("------------------------")
