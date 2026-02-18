@@ -8,12 +8,12 @@ import os
 # --- Настройки ---
 
 INPUT_FILES = [
-    "prompt_templates/results_question_1.xlsx",
-    "prompt_templates/results_question_2.xlsx",
-    "prompt_templates/results_question_3.xlsx",
-    "prompt_templates/results_question_4.xlsx"
+    "prompt_templates/eval_Вопрос_1.xlsx",
+    "prompt_templates/eval_Вопрос_2.xlsx",
+    "prompt_templates/eval_Вопрос_3.xlsx",
+    "prompt_templates/eval_Вопрос_4.xlsx"
 ]
-OUTPUT_FILE = "prompt_templates/evaluation_results.xlsx"
+OUTPUT_FILE = "prompt_templates/evaluation_results_v2.xlsx"
 
 # --- Препроцессинг текста ---
 def preprocess_text(text: str) -> str:
@@ -63,18 +63,18 @@ def evaluate_all_questions(input_files: list, output_file: str):
             continue
 
         # 2. Поиск эталонного ответа
-        reference_row = df[df["Роль агента"] == "generative_ai_qwen"]
+        reference_row = df[df["роль_агента"] == "generative_ai_qwen"]
         if reference_row.empty:
             print(f'!В файле {file_path} не найден эталон (generative_ai_qwen). Пропускаем.')
             continue
 
-        reference_answer = reference_row["Ответ"].values[0]
+        reference_answer = reference_row["ответ"].values[0]
         reference_emb = get_embeddings([preprocess_text(reference_answer)], model)[0]
 
         # 3. Обработка ответов кандидатов
         for _, row in df.iterrows():
-            role = row["Роль агента"]
-            candidate_answer = row["Ответ"]
+            role = row["роль_агента"]
+            candidate_answer = row["ответ"]
 
             if role == "generative_ai_qwen":
                 continue  # Пропускаем эталон

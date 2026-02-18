@@ -72,6 +72,7 @@ class QuestionEvaluator:
         excel_data = []
         generation_time = datetime.now()
 
+         # Генерация промпта
         for agent in self.AGENT_ROLES:
             agent_prompt = self.generate_prompt(question, agent)
             print(f"\n--- ПРОМПТ ДЛЯ {agent} ---")
@@ -86,6 +87,7 @@ class QuestionEvaluator:
                 **kwargs  # Передаём дополнительные параметры
             )[0]
 
+            # --- Сохраняем данные для Excel ---
             excel_data.append({
                 "Дата и время генерации": generation_time,
                 "Промпт": agent_prompt,

@@ -10,7 +10,7 @@ from augment_module import TaskGenerator
 
 class QuestionEvaluator:
     """
-    Класс для генерации ответов на вопросы из JSON, сохранения в Excel (по вопросу)
+    Класс для генерации ответов от разных "агентов" на вопросы из JSON,  сохранения в Excel (по вопросу)
     и в единый JSON‑файл со всеми результатами.
     """
 
@@ -90,7 +90,7 @@ class QuestionEvaluator:
         temperature: float = 0.7,
         max_length: int = 1000,
         num_return_sequences: int = 1,
-        **kwargs
+        **kwargs # Для возможных дополнительных параметров generate_tasks
     ):
         """Генерирует ответы для одного вопроса и сохраняет в Excel + добавляет в общий набор результатов.
         
@@ -135,10 +135,9 @@ class QuestionEvaluator:
                 response = "[Ошибка генерации]"
 
             item = {
-                "вопрос_номер": question_num,
-                "вопрос_текст": question_text,
-                "дата_время_генерации": generation_time,
-                "промпт": agent_prompt,
+                "Дата и время генерации": generation_time,
+                "Вопрос номер": question_num,
+                "Промпт": agent_prompt,
                 "ответ": response.strip(),
                 "роль_агента": agent
             }
