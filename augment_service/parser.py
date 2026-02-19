@@ -298,17 +298,25 @@ def llm_parser(file_path: Path, generator: TaskGenerator) -> dict:
         logger.debug(f"Ответ LLM: {response[:500]}...") # Печатаем начало для отладки
         return {f"вопрос {i}": "" for i in range(1, 5)}
     
-"""
-path = "73.pdf"
-print(path)
+
+
+path = "1.docx"
+output = "1.json"
+
 file_to_parse = Path(f"candidate_answers/{path}")   
+output_filename = Path(f"parsed_answers/{output}")   
+   
 generator = TaskGenerator("qwen3-4b-instruct-2507")
-result = llm_parser(file_to_parse, generator)
+parsing_result = llm_parser(file_to_parse, generator)
+with open(output_filename, "w", encoding="utf-8") as file:
+    json.dump(parsing_result, file, ensure_ascii=False, indent=4)
+    logger.info(f"Результат сохранен в: {output_filename}")
 
+    
 print("Результат парсинга:")
-print(json.dumps(result, ensure_ascii=False, indent=4))
-"""
+print(json.dumps(parsing_result, ensure_ascii=False, indent=4))
 
+'''
 def parse_all_docs(generator_model: str="qwen3-4b-instruct-2507"):
     """
     Обрабатывает все подходящие файлы в папке candidate_answers,
@@ -325,7 +333,7 @@ def parse_all_docs(generator_model: str="qwen3-4b-instruct-2507"):
     
     # Инициализируем генератор
     generator = TaskGenerator(generator_model)
-    supported_extensions = {".txt", ".md", ".doсx", ".pdf"}
+    supported_extensions = {".txt", ".md", ".docx", ".pdf"}
     
     # Парсим все доступные файлы
     for file_path in source_dir.iterdir():
@@ -345,3 +353,4 @@ def parse_all_docs(generator_model: str="qwen3-4b-instruct-2507"):
     
 if __name__ == "__main__":
     parse_all_docs()
+'''
