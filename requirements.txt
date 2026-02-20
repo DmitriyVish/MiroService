@@ -39,6 +39,7 @@ rich==14.3.2
 safetensors==0.7.0
 scikit-learn==1.8.0
 scipy==1.17.0
+sentence-transformers==5.2.3
 setuptools==70.2.0
 shellingham==1.5.4
 six==1.17.0
@@ -48,7 +49,7 @@ tokenizers==0.22.2
 torch==2.10.0+cu126
 torchvision==0.25.0+cu126
 tqdm==4.67.3
-transformers==5.1.0
+transformers==5.2.0
 typer==0.23.1
 typer-slim==0.23.1
 typing_extensions==4.15.0

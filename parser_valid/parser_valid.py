@@ -1,9 +1,10 @@
 import re
-import json 
-import logging 
+import json
+import logging
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+from sentence_transformers import SentenceTransformer 
+from sklearn.metrics.pairwise import cosine_similarity 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -13,7 +14,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 console_handler.setFormatter(formatter)
 if not logger.handlers:
     logger.addHandler(console_handler)
-    
+
 class ParsingValidator:
     """
     Класс для валидации качества парсинга и оценки извлеченных ответов.
@@ -25,7 +26,7 @@ class ParsingValidator:
             embedding_model_name (str): Имя модели для вычисления эмбеддингов (для семантической оценки).
                                         sentence-transformers/all-MiniLM-L6-v2 
         """
-        logger.info(f"Загрузка модели эмбеддингов: {embedding_model_name}")
+        logger.info(f"Загрузка модели эмбеддингов: {embedding_model_name}")        
         self.embedding_model = SentenceTransformer(embedding_model_name)
         logger.info("Модель эмбеддингов загружена")
         
@@ -38,16 +39,15 @@ class ParsingValidator:
         Returns:
             float: Косинусное сходство (от 0 до 1). Диапазон [-1, 0) обрезается до 0.
         """
-        
         if not extracted_answer or not reference_answer:
             logger.debug("Один из ответов пустой")
             return 0.0
         
-        embeddings = self.embedding_model.encode([extracted_answer, reference_answer])
+        embeddings = self.embedding_model.encode([extracted_answer, reference_answer])        
         cos_sim = cosine_similarity(embeddings[0].reshape(1, -1), embeddings[1].reshape(1, -1))[0][0]
         return max(0.0, min(1.0, float(cos_sim)))
     
-    def calculate_extract_match(self, extracted_answer: str, reference_answer: str) -> int: 
+    def calculate_exact_match(self, extracted_answer: str, reference_answer: str) -> int: 
         """
         Проверяет, совпадает ли извлеченный ответ с эталонным (без учета регистра и пробелов).
         если тексты идентичны после нормализации, иначе 0.        
@@ -61,7 +61,7 @@ class ParsingValidator:
         """
         if not extracted_answer and not reference_answer:
             logger.debug("Оба ответа пустые")
-            return 0
+            return 1 
         if not extracted_answer or not reference_answer:
             logger.debug("Один из ответов пустой")
             return 0
@@ -73,7 +73,7 @@ class ParsingValidator:
         logger.debug(f"Точное совпадение: {match} для '{norm_extracted}' и '{norm_reference}'")
         return match
     
-    def calculate_f1_score_tokens(self, extracted_answer: str, reference_answer: str) -> float:
+    def calculate_f1_score_tokens(self, extracted_answer: str, reference_answer: str) -> float: 
         """
         Вычисляет F1-меру для наборов токенов между извлеченным и эталонным ответом.       
         F1 = 2 * (Precision * Recall) / (Precision + Recall)
@@ -91,11 +91,11 @@ class ParsingValidator:
         # Обработка случая, когда оба ответа пустые
         if not extracted_answer and not reference_answer:
             logger.debug("Оба ответа пустые")
-            return 0.0
+            return 1.0 # 
         # Обработка случая, когда один из ответов пустой
         if not extracted_answer or not reference_answer:
             logger.debug("Один из ответов пустой")
-            return 0.
+            return 0.0
         # re.findall(r'\b\w+\b', ...) находит все последовательности "словных" символов (буквы, цифры, подчеркивание), ограниченные границами слов (\b)
         tokens_extracted = set(re.findall(r'\b\w+\b', extracted_answer.lower()))
         tokens_reference = set(re.findall(r'\b\w+\b', reference_answer.lower()))
@@ -113,7 +113,7 @@ class ParsingValidator:
         logger.debug(f"F1 (по токенам): {round(f1, 3)} для '{tokens_extracted}' и '{tokens_reference}'")
         return f1
     
-    def evaluate_single_answer(self, extracted_answer: str, reference_answer: str, threshold_semantic: float = 0.7) -> dict[str, float]:
+    def evaluate_single_answer(self, extracted_answer: str, reference_answer: str, threshold_semantic: float = 0.7) -> dict[str, float]: 
         """
         Оценивает один извлеченный ответ по отношению к эталонному.
         Args:
@@ -123,15 +123,16 @@ class ParsingValidator:
         Returns:
             dict: Словарь с вычисленными метриками.
         """
+        
         semantic_sim = self.calculate_semantic_similarity(extracted_answer, reference_answer)
-        extract_match = self.calculate_extract_match(extracted_answer, reference_answer)
-        f1 = self.calculate_f1_score_tokens(extracted_answer, reference_answer)
+        exact_match = self.calculate_exact_match(extracted_answer, reference_answer) 
+        f1 = self.calculate_f1_score_tokens(extracted_answer, reference_answer) 
         # Бинарное совпадение по семантике
         semantic_match = 1 if semantic_sim >= threshold_semantic else 0
         return {
-            "exact_match": extract_match, 
-            "f1_score": f1, 
-            "semantic_similarity": semantic_sim, 
+            "exact_match": exact_match,
+            "f1_score": f1,
+            "semantic_similarity": semantic_sim,
             "semantic_match": semantic_match 
         }
         
@@ -151,7 +152,7 @@ class ParsingValidator:
             "exact_match": [],
             "f1_score": [],
             "semantic_similarity": [],
-            "semantic_match": []
+            "semantic_match": [] 
             }
         
         # Проходим по парам результатов
@@ -163,14 +164,14 @@ class ParsingValidator:
                 reference_ans = ref_res.get(q_key, "")
                 
                 # Вычисляем метрики для этой пары ответов
-                eval_res = self.evaluate_single_answer(extracted_ans, reference_ans)
+                eval_res = self.evaluate_single_answer(extracted_ans, reference_ans) 
                 for metric, value in eval_res.items():
                     all_metrics[metric].append(value)
                 logger.debug(
-                            f"""{q_key}: EM={eval_res['exact_match']:.3f},
+                            f"""{q_key}: EM={eval_res['exact_match']:.3f}, 
                             F1={eval_res['f1_score']:.3f},
                             SemSim={eval_res['semantic_similarity']:.3f},
-                            SemMatch={eval_res['semantic_match']}"""
+                            SemMatch={eval_res['semantic_match']}""" 
                             ) 
         # Среднее значение по всем метрикам   
         average_metrics = {}
@@ -192,7 +193,7 @@ class ParsingValidator:
         Returns:
             dict[str, float]: Словарь с метриками качества парсинга
         """ 
-        # Общее количество полей для заполнения
+        # --- ИСПРАВЛЕНО: ОПЕЧАТКИ В ИМЕНАХ ПЕРЕМЕННЫХ ---
         total_questions = len(parsed_results) * 4
         filled_questions = 0 # Счетчик заполненных полей
         total_length = 0 # Общая длина всех ответов
@@ -235,50 +236,106 @@ class ParsingValidator:
 
         logger.info(f"Метрики парсинга (без эталона): {metrics}")
         return metrics
-    
+
+def read_csv_and_prepare_parsed_results(csv_file_path: str) -> list[dict]:
+    """
+    Читает CSV-файл и подготавливает список результатов парсинга.
+    Args:
+        csv_file_path (str): Путь к файлу CSV.
+    Returns:
+        list[dict]: Список словарей с результатами парсинга.
+                   Каждый словарь имеет ключи 'вопрос 1', 'вопрос 2', 'вопрос 3', 'вопрос 4'.
+    """
+    logger.info(f"Чтение CSV файла: {csv_file_path}")
+    try:
+        # Читаем CSV с помощью pandas
+        df = pd.read_csv(csv_file_path)
+        logger.info(f"CSV файл успешно прочитан. Количество строк: {len(df)}")
+
+        # Проверяем, что требуемые колонки существуют
+        required_columns = ['task_1', 'task_2', 'task_3', 'task_4']
+        for col in required_columns:
+            if col not in df.columns:
+                raise ValueError(f"Колонка '{col}' отсутствует в файле {csv_file_path}")
+
+        parsed_results = []
+        # Проходим по каждой строке DataFrame
+        for index, row in df.iterrows():
+            # Создаем словарь для одной строки
+            result_entry = {
+                "вопрос 1": str(row['task_1']) if pd.notna(row['task_1']) else "", 
+                "вопрос 2": str(row['task_2']) if pd.notna(row['task_2']) else "",
+                "вопрос 3": str(row['task_3']) if pd.notna(row['task_3']) else "",
+                "вопрос 4": str(row['task_4']) if pd.notna(row['task_4']) else "",
+            }
+            parsed_results.append(result_entry)
+
+        logger.info(f"Подготовлено {len(parsed_results)} записей для валидации.")
+        return parsed_results
+    except FileNotFoundError:
+        logger.error(f"Файл {csv_file_path} не найден.")
+        raise
+    except ValueError as e:
+        logger.error(f"Ошибка при чтении CSV: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Неизвестная ошибка при чтении CSV: {e}")
+        raise
+
+
 if __name__ == "__main__":
     validator = ParsingValidator()
 
-    # Пример результатов парсинга
-    parsed_results_example = [
-        {
-            "вопрос 1": "Да, возраст лучше заменить на дату рождения.",
-            "вопрос 2": "Создать отдельную таблицу для отслеживания изменений цен.",
-            "вопрос 3": "SELECT ... FROM ... WHERE ...",
-            "вопрос 4": "Потому что он упал у стены."
-        },
-        {
-            "вопрос 1": "Нет, возраст - плохая практика.",
-            "вопрос 2": "", # Пустой ответ
-            "вопрос 3": "SELECT d.department_id, d.department_name, SUM(e.salary) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE e.manager_id IS NULL GROUP BY d.department_id HAVING SUM(e.salary) > 100000;",
-            "вопрос 4": "Карандаш лежит у плинтуса."
-        }
-    ]
+    CSV_FILE_PATH = "loaded_data_1.csv" 
+    parsed_results_from_csv = read_csv_and_prepare_parsed_results(CSV_FILE_PATH)   
+    parsed_results = [parsed_results_from_csv[0]] 
+    logger.info(f"Для валидации используется {len(parsed_results)} записей из CSV.")
 
-    # Пример эталонных результатов (для демонстрации validate_parsing_quality_with_reference)
-    reference_results_example = [
+    # Эталонные результаты
+    reference_results = [
         {
-            "вопрос 1": "Считаю, что поле 'age' не корректно. Лучше хранить 'birth_date'.",
-            "вопрос 2": "Для историчности цен нужно создать таблицу 'item_price_history'.",
-            "вопрос 3": "SELECT D.DEPARTMENT_ID, D.DEPARTMENT_NAME, SUM(E.SALARY) AS TOTAL_SALARY FROM EMPLOYEES E JOIN DEPARTMENTS D ON E.DEPARTMENT_ID = D.DEPARTMENT_ID JOIN LOCATIONS L ON D.LOCATION_ID = L.LOCATION_ID WHERE E.MANAGER_ID IS NULL AND L.CITY = 'Seoul' GROUP BY D.DEPARTMENT_ID, D.DEPARTMENT_NAME HAVING SUM(E.SALARY) > 100000;",
-            "вопрос 4": "Карандаш находится в углу комнаты."
-        },
-        {
-            "вопрос 1": "Age number не подходит, используйте date birth.",
-            "вопрос 2": "Создайте таблицу item_prices_history.",
-            "вопрос 3": "SELECT d.department_id, d.department_name, SUM(e.salary) AS total_salary FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE e.manager_id IS NULL AND d.location_id IN ( SELECT location_id FROM locations WHERE city = 'SEOUL' ) GROUP BY d.department_id, d.department_name HAVING SUM(e.salary) > 100000;",
-            "вопрос 4": "Карандаш лежит у стены."
+            "вопрос 1": """По корректности полей - возраст лучше хранить не числом, а вычислять через дату рождения. Также появляется возможность проведения акций в день рождения.
+                            Отсутвуют атрибуты с конктактной информацией - email, номер телефона, мессенджеры
+                            Не указаны первичный и внешний ключ. В качестве первичного следует использовать client_id, в качетве внешнего - city_id 
+                            Возможно следует создать зависимую таблицу с метаданными по клиенту - время сессии, дата последнего подключения, статус аккаунта, язык интерфейса, флаги основных настроек""",
+            "вопрос 2": """Для построения отчетности данную таблицу необходимо переработать и дополнить боковыми таблицами 
+                            Будем исходить из звездно-снежинковой схемы. 
+                            Саму таблицу items необходимо переименовать в items_prices  и привести к scd2 добавив даты на которые цена была актуальна, 
+                            при этом убрав из таблицы атрибут item_name в отдельную таблицу item_desc в которой будут храниться бизнес-атрибуты по товару (наименование, вес, срок годности)
+                            По самим ценам необходимо уточнение является ли эта цена входной или же продажной. 
+                            В случае если это входная цена, то лучше отказаться от единой таблицы с ценами и декомпозировать ее в разрезе поставщик-заказ-товар и вычислять как средневзвешенную от объема и стоимости заказа
+
+                            В таблицу с ценами возможно следует добавить id валюты - ссылку на отдельную табилицу с валютами 
+                            также необходима информация по поставщикам, для этого мы можем или добавить id поставщика в таблицу с item_desc, но лучше вывести в отдельную таблицу item_vendor
+                            в этом случае мы избежим замножения данных по товару если его поставляет сразу несколько поставщиков 
+                            Помимо этого необходим справочник с категориями товаров, для возможности проводить аналитику не только в разрезе товара но и в разрезе категорий
+
+                            итого: резюмируя требуется полная переработка исходной таблицы в зависимости от нужд коллег из финансовой отчетности""",
+            "вопрос 3": """Ошибки:
+                            1) отсутствие алиасов у атрибутов - атрибут DEPARTMENT_ID присутствует в таблицах EMPLOYEE и DEPARTMENTS
+                            2) избыточное количество атрибутов в запросе - в задаче указано получить все отделы, не требуется выводить ID отдела и сумму зарплат
+                            3) Неявный джоин таблиц EMPLOYEE и DEPARTMENTS указанный в FROM ошибкой не является, но лучше укзать его в явном виде как inner join
+                            4) Таблица EMPLOYEE указана неверно - верно EMPLOYEES
+                            5) Запись формата "MANAGER_ID = NULL" является не корректной т.к. для сравнения с null используется конструкция is null/is not null
+                            6)  LOCATION_ID = - не является ошибкой но в случае если подзапрос вернет более одного значения, основной запрос упадет с ошибкой, лучше использовать in, 
+                            особенно с учетом того что в подзапросе отсутствует дедубликация
+                            7) WHERE CITY = 'SEOUL' - в связи с тем что у нас нет информации о том как хранится название города, следует или принудительно привести к верхнему регистру через UPPER 
+                            или использовать like
+                            8) SUM(SALARY) >= 100000 - условие с агрегацией следует указать в Having
+                            9) В условии задачи указано "более", а в условии фильтрации ">="
+                            10) GROUP BY DEPARTMENT_NAME - атрибутивный состав в группировке не соответствует атрибутивному составу в запросе""",
+            "вопрос 4": """Карандаш положили вплотную со стеной."""
         }
     ]
 
     print("\n--- Валидация с эталоном ---")
-    metrics_with_ref = validator.validate_parsing_quality_with_reference(parsed_results_example, reference_results_example)
+    metrics_with_ref = validator.validate_parsing_quality_with_reference(parsed_results, reference_results)
     print("Средние метрики (с эталоном):")
     for k, v in metrics_with_ref.items():
         print(f"  {k}: {v:.3f}")
 
     print("\n--- Валидация без эталона ---")
-    metrics_without_ref = validator.validate_parsing_quality_without_reference(parsed_results_example)
+    metrics_without_ref = validator.validate_parsing_quality_without_reference(parsed_results)
     print("Метрики парсинга (без эталона):")
     for k, v in metrics_without_ref.items():
         print(f"  {k}: {v:.3f}")
